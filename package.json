@@ -1,0 +1,20 @@
+{
+  "name": "puppeter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "file-system": "^2.2.2",
+    "fs": "^0.0.1-security",
+    "puppeteer": "^10.2.0",
+    "scrape-youtube": "^2.1.9",
+    "yt-channel-info": "^2.2.0",
+    "yt-scraper": "^2.1.0"
+  }
+}
