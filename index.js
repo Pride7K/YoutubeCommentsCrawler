@@ -2,14 +2,14 @@ const puppeteer = require('puppeteer');
 const fs = require("fs");
 const ytch = require('yt-channel-info');
 
-(async ()=> 
+(async () => 
 {
-  const browser = await puppeteer.launch({ headless: false, waitUntil: 'domcontentloaded' });
+  const browser = await puppeteer.launch({  waitUntil: 'domcontentloaded' });
   const page = await browser.newPage();
-  load(page);
+  load(page, browser);
 })();
 
-async function load(page)
+async function load(page, browser)
 {
   const ChannelVideos = await GetChannelVideos("UC4igCP1XK1NWyYoVKVc0rfA");
   const RandomVideo = await GetRandomVideo(ChannelVideos)
@@ -24,11 +24,11 @@ async function load(page)
     setTimeout(async () =>
     {
       const elements = await page.$$('ytd-comment-renderer')
-      if(elements.length == 0)
+      if (elements.length == 0)
       {
-        load();
+        load(page, browser);
       }
-      for (let i = 0; i < elements.length; i++)
+      for (let i = 0; i < elements.slice(0, 1).length; i++)
       {
         try
         {
@@ -40,16 +40,23 @@ async function load(page)
               inline: 'center'
             })
           }
-          catch{
+          catch {
 
           }
-          await elements[i].screenshot({ path: `./comments/${ i }.png` })
+          var { x, y, width, height } = await page.$eval("ytd-comment-renderer", item =>
+          {
+            var { width, height } = item.getBoundingClientRect()
+            var x = parseInt(item.offsetLeft - item.scrollLeft)
+            var y = parseInt(item.offsetTop - item.scrollTop)
+            return { x, y, width, height }
+          });
+          await elements[i].screenshot({ path: `./comments/${ i }.png`, clip: { x, y, width, height } })
+          await browser.close();
         } catch (e)
         {
-          console.log(`couldnt take screenshot of element with index: ${ i }. cause: `, e)
+          load(page,browser)
         }
       }
-      await browser.close();
     }, 3000)
   }, 3000)
 }
