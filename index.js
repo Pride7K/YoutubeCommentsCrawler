@@ -8,7 +8,7 @@ const commentsFolderName = "comments";
 
 (async () => 
 {
-  const browser = await puppeteer.launch({ headless: false, devtools: true });
+  const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
   load(page, browser);
 })();
@@ -19,7 +19,7 @@ async function load(page, browser)
   const RandomVideo = await GetRandomVideo(ChannelVideos)
   const urlRandomVideo = `https://www.youtube.com/watch?v=${ RandomVideo.videoId }`
   await page.goto(urlRandomVideo, { waitUntil: "networkidle0" })
-  
+
   // networkidle0 waits for the network to be idle (no requests for 500ms).
   // The page's JS has likely produced markup by this point, but wait longer
   // if your site lazy loads, etc.
