@@ -1,10 +1,14 @@
 const puppeteer = require('puppeteer');
 const fs = require("fs");
 const ytch = require('yt-channel-info');
+const UUID = require('uuid-int');
+const generator = UUID(0);
+
+const commentsFolderName = "comments";
 
 (async () => 
 {
-  const browser = await puppeteer.launch({  waitUntil: 'domcontentloaded' });
+  const browser = await puppeteer.launch({ headless: false, devtools: true });
   const page = await browser.newPage();
   load(page, browser);
 })();
@@ -14,53 +18,55 @@ async function load(page, browser)
   const ChannelVideos = await GetChannelVideos("UC4igCP1XK1NWyYoVKVc0rfA");
   const RandomVideo = await GetRandomVideo(ChannelVideos)
   const urlRandomVideo = `https://www.youtube.com/watch?v=${ RandomVideo.videoId }`
-  await page.goto(urlRandomVideo)
-  setTimeout(async () =>
-  {
-    await page.evaluate(() =>
-    {
-      document.querySelector("ytd-comments").scrollIntoView()
-    })
-    setTimeout(async () =>
-    {
-      const elements = await page.$$('ytd-comment-renderer')
-      if (elements.length == 0)
-      {
-        load(page, browser);
-      }
-      for (let i = 0; i < elements.slice(0, 1).length; i++)
-      {
-        try
-        {
-          try
-          {
-            await page.$$('ytd-comment-renderer')[i].scrollIntoView({
-              behavior: 'auto',
-              block: 'center',
-              inline: 'center'
-            })
-          }
-          catch {
+  await page.goto(urlRandomVideo, { waitUntil: "networkidle0" })
+  
+  // networkidle0 waits for the network to be idle (no requests for 500ms).
+  // The page's JS has likely produced markup by this point, but wait longer
+  // if your site lazy loads, etc.
+  // https://developers.google.com/web/tools/puppeteer/articles/ssr?hl=pt-br
 
-          }
-          var { x, y, width, height } = await page.$eval("ytd-comment-renderer", item =>
-          {
-            var { width, height } = item.getBoundingClientRect()
-            var x = parseInt(item.offsetLeft - item.scrollLeft)
-            var y = parseInt(item.offsetTop - item.scrollTop)
-            return { x, y, width, height }
-          });
-          await elements[i].screenshot({ path: `./comments/${ i }.png`, clip: { x, y, width, height } })
-          await browser.close();
-        } catch (e)
-        {
-          load(page,browser)
-        }
-      }
-    }, 3000)
-  }, 3000)
+  await page.waitForSelector('ytd-comments')
+  await page.evaluate(() =>
+  {
+    document.querySelector("ytd-comments").scrollIntoViewIfNeeded()
+  })
+  await page.waitForSelector('ytd-comment-renderer')
+  const elements = await page.$$('ytd-comment-renderer')
+  if (elements.length == 0)
+  {
+    load(page, browser);
+  }
+  var { x, y, width, height } = await page.$eval("ytd-comment-renderer", item =>
+  {
+    var { width, height } = item.getBoundingClientRect()
+    var x = parseInt(item.offsetLeft - item.scrollLeft)
+    var y = parseInt(item.offsetTop - item.scrollTop)
+    return { x, y, width, height }
+  });
+  if (!fs.existsSync(commentsFolderName))
+  {
+    fs.mkdirSync(commentsFolderName);
+  }
+  await elements[getRandomNumberInRange(elements)].screenshot({ path: `./${ commentsFolderName }/${ generator.uuid().toString().slice(-5) }.png`, clip: { x, y, width, height } })
+  await browser.close();
 }
 
+function getRandomNumberInRange(array)
+{
+  return parseInt(Math.random() * (array.length - 0) + 0);
+}
+
+async function RenderAnswers(page)
+{
+  // future purposes
+  await page.$$eval("ytd-button-renderer#more-replies", answers =>
+  {
+    answers.forEach(answer =>
+    {
+      answer.click()
+    })
+  })
+}
 
 function GetChannelVideos(channelId)
 {
@@ -77,7 +83,7 @@ function GetChannelVideos(channelId)
       {
         while (continuation != null)
         {
-          var { items: itemsFilho, continuation: continuatioFilho } = await getSla(continuation)
+          var { items: itemsFilho, continuation: continuatioFilho } = await getChannelVideosLoop(continuation)
           continuation = continuatioFilho;
           videos.push(...itemsFilho)
         }
@@ -96,7 +102,7 @@ function GetRandomVideo(videosArray)
 }
 
 
-async function getSla(continuation)
+async function getChannelVideosLoop(continuation)
 {
   return ytch.getChannelVideosMore(continuation)
 }
