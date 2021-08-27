@@ -11,7 +11,7 @@ Após escolher o comentário randomicamente, tirar uma screenshot do mesmo e sal
 
 Decidi criar um crawler deste tipo para ver até onde essa biblioteca consegue ir, e até onde a ideia de um headless chrome poderia levar.
 
-![GIF](https://github.com/Pride7K/imagens/blob/master/gif2.gif?raw=true)
+![GIF](https://github.com/Pride7K/imagens/blob/master/gif3.gif?raw=true)
 
 
 ## Autor
